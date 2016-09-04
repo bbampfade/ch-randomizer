@@ -199,7 +199,8 @@ namespace CH2
                     if  ( PlayerHelper.CurrentPosition > ((DateTime)SelectedRound.Element("EndTime")).TimeOfDay.TotalSeconds )
                     {
                         PlayerHelper.Stop();
-                        // deliberately not setting wasPlaying here???
+                        wasPlaying = false;
+
                         switch (CurrentBreakMode)
                         {
                             case BreakMode.Between:
