@@ -1,0 +1,93 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CH2"
+        xmlns:localConverters="clr-namespace:CH2.MVVM.Converters"
+        xmlns:localBehaviors="clr-namespace:CH2.MVVM.Behaviors"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity" 
+        x:Class="CH2.RoundAnnotator"
+        mc:Ignorable="d"
+        Title="Round Control"
+        d:DataContext="{d:DesignInstance IsDesignTimeCreatable=True, Type={x:Type local:CHDB}}" ResizeMode="NoResize" MinWidth="369" MinHeight="285" MaxWidth="{Binding RelativeSource={RelativeSource Self}, Path=MinWidth}" MaxHeight="{Binding RelativeSource={RelativeSource Self}, Path=MinHeight}" ScrollViewer.VerticalScrollBarVisibility="Disabled" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <localConverters:FilenameConverter x:Key="FilenameConverter"/>
+        <localConverters:IndexConverter x:Key="IndexConverter" />
+        <localConverters:DGIndexConverter x:Key="DGIndexConverter" />
+        <localConverters:TimeSpanConverter x:Key="TimeSpanConverter" />
+        <Image x:Key="plus" Source="Resources\card--plus.png"/>
+        <Image x:Key="minus" Source="Resources\card--minus.png"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="5,5,5,0" d:LayoutOverrides="Width">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="videoName" TextWrapping="Wrap" IsReadOnly="True" Text="{Binding SelectedVideo.Element[Filename].Value, Converter={StaticResource FilenameConverter}}" MinWidth="150" d:LayoutOverrides="Height" Margin="0"/>
+            <TextBox x:Name="currentPos" TextWrapping="Wrap" Text="{Binding CurrentPlayerPosition, Converter={StaticResource TimeSpanConverter}}" 
+                MinWidth="65.56" MaxWidth="65.56" Margin="0" d:LayoutOverrides="Width, Height" Grid.Column="1"/>
+        </Grid>
+        <Grid Margin="0" Grid.Row="1" d:LayoutOverrides="Width, Height">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel d:LayoutOverrides="Height" Margin="5">
+                    <Button x:Name="StartButton" Content="START" MinHeight="40" Command="{Binding StartButtonPressed}"/>
+                    <Button x:Name="EndButton" Content="END"  MinHeight="40" Command="{Binding EndButtonPressed}"/>
+                </StackPanel>
+                <UniformGrid Rows="1" Columns="4" Margin="5" Grid.Row="1">
+                    <Button x:Name="doubleLessThan" Content="&lt;&lt;" Command="{Binding Back15ButtonPressed}" Margin="0"/>
+                    <Button x:Name="lessThan" Content="&lt;" Command="{Binding Back5ButtonPressed}"/>
+                    <Button x:Name="GreaterThan" Content="&gt;" Command="{Binding Forward5ButtonPressed}"/>
+                    <Button x:Name="doubleGreaterThan" Content="&gt;&gt;" Command="{Binding Forward15ButtonPressed}"/>
+                </UniformGrid>
+                <Grid Margin="5" Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="resetRound" Content="|&lt; round" Command="{Binding ResetRoundButtonPressed}"/>
+                    <Button x:Name="endOfRound" Content="round &gt;|" Command="{Binding EndRoundButtonPressed}" Grid.Column="1"/>
+                    <Button x:Name="resetVideo" Content="|&lt; video" Command="{Binding ResetVideoButtonPressed}" Grid.Row="1"/>
+                    <Button x:Name="endOfVideo" Content="video &gt;|" Command="{Binding EndVideoButtonPressed}" Grid.Column="1" Grid.Row="1"/>
+                </Grid>
+            </Grid>
+            <DataGrid x:Name="roundsBox" ItemsSource="{Binding SelectedVideo.Elements[Round]}" SelectionMode="Single" 
+                FontFamily="Consolas" AutoGenerateColumns="False" HorizontalContentAlignment="Stretch"
+                VerticalScrollBarVisibility="Visible" d:LayoutOverrides="Width" Padding="0" VerticalContentAlignment="Stretch" Margin="5,0,0,5" MinWidth="205" MaxHeight="180.4"
+                      localBehaviors:DataGridBehavior.DisplayRowNumber="True">
+                <i:Interaction.Behaviors>
+                    <localBehaviors:CancellableSelectionBehavior SelectedItem="{Binding SelectedRound}" />
+                </i:Interaction.Behaviors>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Start Time" Binding="{Binding Element[StartTime].Value}"/>
+                    <DataGridTextColumn Header="End Time" Binding="{Binding Element[EndTime].Value}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
+        <StackPanel Orientation="Horizontal" Height="20" Margin="5,0,0,5" VerticalAlignment="Bottom" d:LayoutOverrides="Width, LeftMargin, RightMargin, TopMargin, BottomMargin" Grid.Row="2">
+            <Button x:Name="addRoundButton" Content="{DynamicResource plus}" Command="{Binding AddRoundButtonPressed}"/>
+            <Button x:Name="deleteRoundButton" Content="{DynamicResource minus}" Command="{Binding DeleteRoundButtonPressed}" Margin="5,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
+    

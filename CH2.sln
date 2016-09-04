@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CH2", "CH2\CH2.csproj", "{6D606CE4-C143-4ED9-8A05-0AE806EB7804}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WmpAxLib", "WmpAxLib\WmpAxLib.csproj", "{5411F0E6-77AE-4BB5-B279-0A19E598EE83}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XMLUtilities", "XMLUtilities\XMLUtilities.csproj", "{6A631C00-BB6B-4BD2-AF43-9B8052C18DBD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6D606CE4-C143-4ED9-8A05-0AE806EB7804}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D606CE4-C143-4ED9-8A05-0AE806EB7804}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D606CE4-C143-4ED9-8A05-0AE806EB7804}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D606CE4-C143-4ED9-8A05-0AE806EB7804}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5411F0E6-77AE-4BB5-B279-0A19E598EE83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5411F0E6-77AE-4BB5-B279-0A19E598EE83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5411F0E6-77AE-4BB5-B279-0A19E598EE83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5411F0E6-77AE-4BB5-B279-0A19E598EE83}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A631C00-BB6B-4BD2-AF43-9B8052C18DBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A631C00-BB6B-4BD2-AF43-9B8052C18DBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A631C00-BB6B-4BD2-AF43-9B8052C18DBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A631C00-BB6B-4BD2-AF43-9B8052C18DBD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

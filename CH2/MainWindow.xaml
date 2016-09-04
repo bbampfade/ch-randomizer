@@ -1,0 +1,204 @@
+﻿<Window x:Class="CH2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms" 
+        xmlns:ax="clr-namespace:AxWMPLib;assembly=AxInterop.WMPLib"
+        xmlns:xLinq="clr-namespace:System.Xml.Linq;assembly=System.Xml.Linq"
+        xmlns:local="clr-namespace:CH2"
+        xmlns:localConverters="clr-namespace:CH2.MVVM.Converters"
+        xmlns:componentModel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
+        xmlns:xtck="http://schemas.xceed.com/wpf/xaml/toolkit"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        SizeToContent="Width" MaxWidth="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Width}"
+        MaxHeight="{Binding Source={x:Static SystemParameters.WorkArea}, Path=Height}">
+    <Window.Resources>
+        <localConverters:GetVideoIndexMultiConverter x:Key="GetVideoIndexMultiConverter" />
+        <localConverters:IndexConverter x:Key="IndexConverter" />
+        <localConverters:FilenameConverter x:Key="FilenameConverter" />
+        <localConverters:EnumBooleanConverter x:Key="EnumBooleanConverter" />
+        <localConverters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <localConverters:BooleanToInverseVisibilityConverter x:Key="BooleanToInverseVisibilityConverter" />
+        <DataTemplate x:Key="VideoTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Margin="3">
+                    <TextBlock.Text>
+                        <MultiBinding Converter="{StaticResource GetVideoIndexMultiConverter}" ConverterParameter="0">
+                            <Binding Path="." />
+                            <Binding RelativeSource="{RelativeSource FindAncestor, AncestorType={x:Type ItemsControl}}" Path="ItemsSource"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="RoundTemplate">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Margin="3" Text="" />
+                <TextBlock Margin="3" Text="{Binding Path=Element[Filename].Value}" />
+                <TextBlock Margin="3" Text=":" />
+                <TextBlock Margin="3" Text="{Binding Path=Element[StartTime].Value}" />
+                <TextBlock Margin="3" Text="-" />
+                <TextBlock Margin="3" Text="{Binding Path=Element[EndTime].Value}" />
+            </StackPanel>
+        </DataTemplate>
+        <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+        <DoubleAnimation
+            x:Key="CharacterWaveAnimation"
+            x:Shared="false"
+            To="20"
+            AccelerationRatio="0.5"
+            AutoReverse="True"
+            DecelerationRatio="0.5"
+            Duration="0:0:0.5"
+            RepeatBehavior="Forever"
+            Storyboard.TargetName="breakTextBlock"/>
+        <DoubleAnimation
+            x:Key="CharacterRotationAnimation"
+            x:Shared="false"
+            To="360"
+            AccelerationRatio="0.5"
+            DecelerationRatio="0.5"
+            Duration="0:0:1"
+            Storyboard.TargetName="breakTextBlock" />
+        <DoubleAnimation
+            x:Key="CharacterRotationPauseAnimation"
+            Duration="0:0:8"
+            Storyboard.TargetProperty="Opacity" />
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <!-- Button panel -->
+        <DockPanel x:Name="ButtonsAndPlayerPanel" Margin="0">
+            <Grid x:Name="ButtonsPanel" MinHeight="101" Margin="0,5" Width="800" DockPanel.Dock="Bottom" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <GroupBox Header="Main Controls">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+                        <Button Content="Start" Command="{Binding StartPlaybackRandom}" MinWidth="56.8" Margin="0" HorizontalAlignment="Left" Width="{Binding ActualWidth, ElementName=roundControlShowButton, Mode=OneWay}" VerticalAlignment="Top"/>
+                        <Button Grid.Row="1" x:Name="roundControlShowButton" Content="Round Control ..." Margin="0,10,0,0" VerticalAlignment="Top" Click="roundControlShowButton_Click" HorizontalAlignment="Left"/>
+                    </Grid>
+                </GroupBox>
+                <GroupBox HorizontalAlignment="Left" Margin="5,0,0,0" Grid.Column="1" Header="Settings">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <CheckBox x:Name="alwaysOnTopCheckBox" Content="Always On Top" d:LayoutOverrides="Width, Height"/>
+                        <CheckBox x:Name="roundModeCheckBox" Content="Round Mode" IsChecked="{Binding RoundMode}" d:LayoutOverrides="Height" Grid.Row="1"/>
+                        <TextBlock Grid.IsSharedSizeScope="True" Text="Database:" Grid.Column="1" Grid.Row="0" Margin="10,0,5,2" HorizontalAlignment="Left"/>
+                        <ComboBox x:Name="fileChooser" IsEnabled="{Binding BothFilesExist}" SelectionChanged="fileChooser_SelectionChanged" d:LayoutOverrides="Height" Margin="10,0,5,0" HorizontalAlignment="Left" Grid.Column="1" Grid.Row="1" Grid.IsSharedSizeScope="True" Width="68" MinWidth="52.69">
+                            <ComboBoxItem x:Name="CHDBItem" IsSelected="True" Content="CHDB" />
+                            <ComboBoxItem x:Name="InWorkItem" Content="In-Work"/>
+                        </ComboBox>
+                        <GroupBox Grid.Column="2" Grid.RowSpan="3" Header="Break Settings">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <RadioButton x:Name="setBreak" Grid.Row="0" GroupName="Break" Content="Set Break (secs)" 
+                                    IsChecked="{Binding CurrentBreakMode, ConverterParameter=Set, Converter={StaticResource EnumBooleanConverter}}"/>
+                                <RadioButton x:Name="betweenBreak" Grid.Row="1" GroupName="Break" Content="Set between (secs)" 
+                                    IsChecked="{Binding CurrentBreakMode, ConverterParameter=Between, Converter={StaticResource EnumBooleanConverter}}"/>
+                                <RadioButton x:Name="randomBreak" Grid.Row="2" GroupName="Break" Content="Random" 
+                                    IsChecked="{Binding CurrentBreakMode, ConverterParameter=Random, Converter={StaticResource EnumBooleanConverter}}"/>
+                                <xtck:IntegerUpDown Grid.Row="0" Grid.Column="2" x:Name="SetBreak"   Minimum="0" Maximum="300" 
+                                                    Value="{Binding MaxSetBreakLength, Mode=TwoWay}" 
+                                                    Margin="5,0" IsEnabled="{Binding IsChecked, ElementName=setBreak}"/>
+                                <xtck:IntegerUpDown Grid.Row="1" Grid.Column="1" x:Name="BetweenMin" Minimum="0" Maximum="300"
+                                                    Margin="5,0,0,0" IsEnabled="{Binding IsChecked, ElementName=betweenBreak}"
+                                                    Value="{Binding MinBetweenBreakLength, Mode=TwoWay}"/>
+                                <xtck:IntegerUpDown Grid.Row="1" Grid.Column="2" x:Name="BetweenMax" Minimum="0" Maximum="300"
+                                                    Margin="5,0" IsEnabled="{Binding IsChecked, ElementName=betweenBreak}"
+                                                    Value="{Binding MaxBetweenBreakLength, Mode=TwoWay}"/>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                </GroupBox>
+                <GroupBox Header="Misc. Controls" Grid.Column="2">
+                    <Grid >
+                        <Grid.RowDefinitions>
+                            <RowDefinition />
+                            <RowDefinition />
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+                        <Button x:Name="buryRoundButton" Content="Bury this round" Grid.Row="0" Command="{Binding BuryRoundCommand}"/>
+                        <Button x:Name="buryVideoButton" Content="Bury this video" Grid.Row="1" Margin="0,5,0,0" Command="{Binding BuryVideoCommand}"/>
+                        <Button x:Name="restoreBuriedButton" Content="Restore buried rounds" Grid.Row="2" Margin="0,5,0,0" Command="{Binding RestoreBuriedCommand}"/>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+            <Grid Margin="0" DockPanel.Dock="Top">
+                <WindowsFormsHost x:Name="formsHost" Visibility="{Binding OnBreak, Converter={StaticResource BooleanToInverseVisibilityConverter}}">
+                    <ax:AxWindowsMediaPlayer x:Name="axWmp"/>
+                </WindowsFormsHost>
+                <Grid x:Name="BreakScreen" Visibility="{Binding OnBreak, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock x:Name="breakTextBlock" IsVisibleChanged="startTextAnimations" Loaded="setupTextAnimations" Text="BREAK TIME" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="48" FontWeight="Bold" Panel.ZIndex="2"/>
+                    <ProgressBar HorizontalAlignment="Center" VerticalAlignment="Center" Height="20" Margin="0,100,0,0" 
+                                 Width="{Binding ActualWidth, ElementName=breakTextBlock, Mode=OneWay}"
+                                 Minimum="{Binding BreakMinimum}"
+                                 Maximum="{Binding BreakMaximum}"
+                                 Value="{Binding BreakProgress}">
+                        <ProgressBar.LayoutTransform>
+                            <RotateTransform Angle="180"/>
+                        </ProgressBar.LayoutTransform>
+                    </ProgressBar>
+                </Grid>
+            </Grid>
+        </DockPanel>
+        <DockPanel x:Name="ListBoxPanel" MinWidth="300" Margin="5" Grid.Column="1" VerticalAlignment="Top" ScrollViewer.CanContentScroll="True">
+            <TextBlock x:Name="totalRoundsBlock" Text="{Binding AllRounds.Count, StringFormat=Total Rounds loaded: \{0\}}" VerticalAlignment="Top" Width="300" DockPanel.Dock="Top"/>
+            <ListView x:Name="lvVideos"
+                ItemsSource="{Binding AllVideos}" SelectionMode="Single" 
+                SelectedItem="{Binding SelectedVideo, Mode=TwoWay}" 
+                SelectionChanged="lbVideos_SelectionChanged" FontFamily="Consolas" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="0" Width="300" DockPanel.Dock="Right" VerticalContentAlignment="Top">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="#" Width="35">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource IndexConverter}, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListViewItem}}}"
+                                        TextAlignment="Right" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="Filename" Width="200"
+                            DisplayMemberBinding="{Binding Element[Filename].Value, Converter={StaticResource FilenameConverter}}"/>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </DockPanel>
+    </Grid>
+
+</Window>
