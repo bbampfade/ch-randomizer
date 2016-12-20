@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Xml.Linq;
+using TokenizedTag;
+using System.Collections;
 
 namespace CH2
 {
@@ -39,6 +41,7 @@ namespace CH2
         }
 
         private readonly NotifyProperty<double> _breakMinimumProperty;
+
         public double BreakMinimum
         {
             get { return _breakMinimumProperty.Value; }
@@ -107,6 +110,14 @@ namespace CH2
             }
         }
 
+        private readonly NotifyProperty<bool> _tagTreeViewSyncedToSelectedRound;
+
+        public bool TagTreeViewSyncedToSelectedRound
+        {
+            get { return _tagTreeViewSyncedToSelectedRound.Value; }
+            set { _tagTreeViewSyncedToSelectedRound.SetValue(value); }
+        }
+
         private readonly NotifyProperty<bool> _bothFilesExist;
         public bool BothFilesExist
         {
@@ -133,6 +144,13 @@ namespace CH2
                             startPlaying();
                         }
                     }
+                    if (TagTreeViewSyncedToSelectedRound)
+                    {
+                        if (TreeViewSelectedItem != value)
+                        {
+                            TreeViewSelectedItem = value;
+                        }
+                    }
                 }
             }
         }
@@ -154,15 +172,26 @@ namespace CH2
         public ObservableCollection<XElement> AllRounds
         {
             get
-            {
-                return new ObservableCollection<XElement>(
-                    Root.Descendants("Round").
+            {   // start with everything that exists
+                IEnumerable<XElement> includedRounds = Root.Descendants("Round").
                     // from the set of videos that exist
                     Where(round => round.Parent.Attribute("Exists") != null
                     // and rounds that aren't buried
                     && round.Attribute("Buried") == null).
                     // get round
-                    Select(round => round));
+                    Select(round => round);
+                if (WhitelistTags.Count > 0)
+                {
+                    var includedTags = new HashSet<string>(WhitelistTags);
+                    includedRounds = includedRounds.Where(round => round.Descendants("Tag").Any(tag => includedTags.Contains(tag.Value)));
+                }
+                if (BlacklistTags.Count > 0)
+                {
+                    var excludedTags = new HashSet<string>(BlacklistTags);
+                    includedRounds = includedRounds.Where(round => round.Descendants("Tag") == null ||
+                                                                   round.Descendants("Tag").All(tag => !excludedTags.Contains(tag.Value)));
+                }
+                return new ObservableCollection<XElement>(includedRounds);
             }
             // do i want to implement this?
             private set
@@ -189,6 +218,89 @@ namespace CH2
             }
         }
 
+        public List<string> AllTags
+        {
+            get
+            {
+                return (from tag in TagDBElement.Descendants("Tag") select tag.Value ).ToList();
+            }
+        }
+
+        public List<string> UncategorizedTags
+        {
+            get
+            {
+                return (from tag in ( from tagCat 
+                                      in TagDBElement.Descendants("TagCategory")
+                                      where tagCat.Attribute("id").Value.Equals("None")
+                                      select tagCat
+                                     ).Descendants("Tag")
+                        select tag.Value).ToList();
+            }
+        }
+
+        public List<string> WhitelistTags
+        {
+            get
+            {
+                return (from tag in (from tagCat
+                                     in TagDBElement.Descendants("TagCategory")
+                                     where tagCat.Attribute("id").Value.Equals("whitelist")
+                                     select tagCat
+                                     ).Descendants("Tag")
+                        select tag.Value).ToList();
+            }
+        }
+
+        public List<string> BlacklistTags
+        {
+            get
+            {
+                return (from tag in (from tagCat
+                                     in TagDBElement.Descendants("TagCategory")
+                                     where tagCat.Attribute("id").Value.Equals("blacklist")
+                                     select tagCat
+                                     ).Descendants("Tag")
+                        select tag.Value).ToList();
+            }
+        }
+
+        private NotifyProperty<XElement> _treeViewSelectedItemProperty;
+
+        public XElement TreeViewSelectedItem
+        {
+            get { return _treeViewSelectedItemProperty.Value; }
+            set { _treeViewSelectedItemProperty.SetValue(value); }
+        }
+
+        private DerivedNotifyProperty<List<TokenizedTagItem>> _treeViewSelectedItemTagsDerivedProperty;
+
+        public List<TokenizedTagItem> TreeViewSelectedTags
+        {
+            get {
+                if ( TreeViewSelectedItem == null)
+                {
+                    return new List<TokenizedTagItem>();
+                }
+
+                var temp = from tag in TreeViewSelectedItem.Elements("Tag")
+                           select new TokenizedTagItem
+                           {
+                               Text = tag.Value
+                           };
+                if (temp.Count() == 0)
+                    return new List<TokenizedTagItem>();
+                return temp.ToList();
+            }
+
+            set
+            {
+                if ( value != null)
+                {
+                    Console.WriteLine("value is {0}", value);
+                }
+            }
+        }
 
         private DelegateCommand _startButtonPressed;
 
@@ -406,6 +518,62 @@ namespace CH2
             }
         }
 
+        private DelegateCommand _playTreeViewSelectedRound;
+
+        public DelegateCommand PlayTreeViewSelectedRound
+        {
+            get
+            {
+                return _playTreeViewSelectedRound ?? (_playTreeViewSelectedRound = new DelegateCommand(
+                    () =>
+                    {
+                        if (TreeViewSelectedItem != null)
+                        {
+                            XElement roundToSelect;
+                            if (TreeViewSelectedItem.Name.Equals(XName.Get("VIDEO")))
+                            {
+                                // play first round of this video
+                                roundToSelect = TreeViewSelectedItem.Element("Round");
+                            }
+                            else
+                            {
+                                roundToSelect = TreeViewSelectedItem;
+                            }
+                            wasPlaying = true; // override this, so that it will start no matter what
+                            SelectedRound = roundToSelect;
+                        }
+                    }));
+            }
+        }
+
+        private DelegateCommand _treeViewSelectCurrentRound;
+
+        public DelegateCommand TreeViewSelectCurrentRound
+        {
+            get
+            {
+                return _treeViewSelectCurrentRound ?? (_treeViewSelectCurrentRound = new DelegateCommand(
+                    () =>
+                    {
+                        TreeViewSelectedItem = SelectedRound;
+                    }));
+            }
+        }
+
+        private DelegateCommand _toggleTagLinkToPlayer;
+
+        public DelegateCommand ToggleTagLinkToPlayer
+        {
+            get
+            {
+                return _toggleTagLinkToPlayer ?? (_toggleTagLinkToPlayer = new DelegateCommand(
+                    () =>
+                    {
+                        TagTreeViewSyncedToSelectedRound = !TagTreeViewSyncedToSelectedRound;
+                    }));
+            }
+        }
+
         private DelegateCommand _startPlaybackRandom = null;
 
         public DelegateCommand StartPlaybackRandom
@@ -430,6 +598,8 @@ namespace CH2
             }
         }
 
+        // DEPRECATED - this feature should be removed and rolled into tags
+        // make a tag called "blacklisted" or w/e and put it on the blacklist
         private DelegateCommand _buryRound = null;
 
         public DelegateCommand BuryRoundCommand

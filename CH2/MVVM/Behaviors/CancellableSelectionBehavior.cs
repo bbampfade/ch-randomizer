@@ -58,6 +58,10 @@ namespace CH2.MVVM.Behaviors
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
                 {
                     var selector = behavior.AssociatedObject;
+                    if (selector == null)
+                    {
+                        return; // can still be null in the designer for some reason
+                    }
                     var selectorType = behavior.AssociatedObject.GetType();
                     selector.SelectedValue = e.NewValue;
                     if (typeof(DataGrid).IsAssignableFrom(selectorType))

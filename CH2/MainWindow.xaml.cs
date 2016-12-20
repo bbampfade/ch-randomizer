@@ -19,9 +19,11 @@ namespace CH2
 
         CHDB chdb;
         private RoundAnnotator ra;
+        private TagEditor te;
         private Storyboard storyboardWave;
         private Storyboard storyboardRotation;
         private readonly string me;
+        private TagPreferences tp;
 
         public MainWindow()
         {
@@ -53,7 +55,11 @@ namespace CH2
 
             DataContext = chdb;
             ra = new RoundAnnotator(chdb);
-            ra.Show();
+            //ra.Show();
+            te = new TagEditor(chdb);
+            //te.Show();
+            tp = new TagPreferences(chdb);
+            //tp.Show();
         }
 
         private void InitMediaPlayer()
@@ -90,6 +96,24 @@ namespace CH2
                 ra = new RoundAnnotator(chdb);
             }
             ra.Show();
+        }
+
+        private void tagEditorShowButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (te == null)
+            {
+                te = new TagEditor(chdb);
+            }
+            te.Show();
+        }
+
+        private void tagPreferencesShowButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (tp == null)
+            {
+                tp = new TagPreferences(chdb);
+            }
+            te.Show();
         }
 
         private void setupTextAnimations(object sender, RoutedEventArgs e)
@@ -190,5 +214,7 @@ namespace CH2
                 }
             }            
         }
+
+
     }
 }

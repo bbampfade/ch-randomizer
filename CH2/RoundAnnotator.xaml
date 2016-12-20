@@ -14,7 +14,6 @@
     <Window.Resources>
         <localConverters:FilenameConverter x:Key="FilenameConverter"/>
         <localConverters:IndexConverter x:Key="IndexConverter" />
-        <localConverters:DGIndexConverter x:Key="DGIndexConverter" />
         <localConverters:TimeSpanConverter x:Key="TimeSpanConverter" />
         <Image x:Key="plus" Source="Resources\card--plus.png"/>
         <Image x:Key="minus" Source="Resources\card--minus.png"/>

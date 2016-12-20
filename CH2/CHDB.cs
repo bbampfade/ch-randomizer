@@ -1,20 +1,20 @@
 ﻿using CH2.Helpers;
 using CH2.MVVM;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
+using System.Xml;
 using System.Xml.Linq;
+using TokenizedTag;
 
 namespace CH2
 {
     internal partial class CHDB : BaseViewModel
     {
-
-
-
         bool wasPlaying = false; // are we playing a video currently, or were we very recently?
 
         static Random random = new Random();
@@ -25,27 +25,35 @@ namespace CH2
 
         private XElement CHDBElement;
         private XElement InWorkElement;
+        private XElement TagDBElement;
 
         private string CHDBFilename = @"CHDB.xml";
         private string InWorkFilename = @"orphans.xml";
+        private string TagDBFilename = @"tagdb.xml";
 
         private string pathToCHDB;
         private string pathToInWork;
+        private string pathToTagDB;
         private string CurrentFile;
+
 
         public CHDB(string applicationPath)
         {
             pathToCHDB = Path.Combine(applicationPath, CHDBFilename);
             pathToInWork = Path.Combine(applicationPath, InWorkFilename);
-      
-            CHDBElement = XElement.Load(pathToCHDB);
-            InWorkElement = XElement.Load(pathToInWork);
+            pathToTagDB = Path.Combine(applicationPath, TagDBFilename);
+
+            CHDBElement = loadOrCreateXElement(pathToCHDB, XName.Get("CH"));
+            InWorkElement = loadOrCreateXElement(pathToInWork, XName.Get("CH"));
+            TagDBElement = loadOrCreateXElement(pathToTagDB, XName.Get("Tags"));
 
             CurrentFile = pathToCHDB;
 
             Root = CHDBElement ?? new XElement("CH");
 
-            Root.Changed += Root_Changed;
+            CHDBElement.Changed += CHDB_Changed;
+            InWorkElement.Changed += InWorkElement_Changed;
+            TagDBElement.Changed += TagDBElement_Changed;
 
             _roundModeProperty = NotifyProperty.CreateNotifyProperty(this, () => RoundMode);
             _selectedRoundProperty = NotifyProperty.CreateNotifyProperty(this, () => SelectedRound);
@@ -60,8 +68,13 @@ namespace CH2
             _breakBetweenMaxLengthProperty = NotifyProperty.CreateNotifyProperty(this, () => MaxBetweenBreakLength);
             _breakSetMaxLengthProperty = NotifyProperty.CreateNotifyProperty(this, () => MaxSetBreakLength);
             _bothFilesExist = NotifyProperty.CreateNotifyProperty(this, () => BothFilesExist);
+            _tagTreeViewSyncedToSelectedRound = NotifyProperty.CreateNotifyProperty(this, () => TagTreeViewSyncedToSelectedRound);
+            _treeViewSelectedItemProperty = NotifyProperty.CreateNotifyProperty(this, () => TreeViewSelectedItem);
+            _treeViewSelectedItemTagsDerivedProperty = DerivedNotifyProperty.CreateDerivedNotifyProperty<XElement, List<TokenizedTagItem>>(this, () => TreeViewSelectedTags, _treeViewSelectedItemProperty, GetTagsFromSelectedItem);
 
             BothFilesExist = File.Exists(pathToCHDB) && File.Exists(pathToInWork);
+
+            TagTreeViewSyncedToSelectedRound = false;
 
             CurrentBreakMode = BreakMode.Set;
             OnBreak = false;
@@ -83,45 +96,131 @@ namespace CH2
 
             if ( AllVideos.Count() == 0) // if at this point we have no videos... die horrific death?
             {
-                MessageBox.Show("Could not find any videos! Exiting... check your XML files.");
+                
+                MessageBox.Show(String.Format("Could not find any videos! Exiting... check your XML files. path used: {0}", applicationPath));
                 Environment.Exit(1);
             }
 
             // cannot access anything that needs "Exists" or "Buried" until after startup check
             SelectedRound = AllRounds.First();
-        } 
+        }
 
+        private void InWorkElement_Changed(object sender, XObjectChangeEventArgs e)
+        {
+            InWorkElement.Save(pathToInWork);
+        }
+
+        private void TagDBElement_Changed(object sender, XObjectChangeEventArgs e)
+        {
+            TagDBElement.Save(pathToTagDB);
+        }
+
+        private XElement loadOrCreateXElement(string pathToXMLFile, XName root)
+        {
+            XElement returnElement = null;
+            bool needCreate = false;
+            try
+            {
+                // attempt load
+                returnElement = XElement.Load(pathToXMLFile);
+            }
+            catch ( FileNotFoundException fnfe )
+            {
+                fnfe.Log();
+                needCreate = true;
+            }
+            catch ( XmlException xe )
+            {
+                xe.Log();
+                needCreate = true;
+            }
+            catch (Exception e)
+            {
+                // annoy the user with this exception since it was unexpected
+                e.Log().Display();
+                needCreate = true;
+            }
+
+            if (needCreate)
+            {
+                returnElement = new XElement(root);
+                returnElement.Save(pathToXMLFile);
+            }
+
+            return returnElement;
+        }
 
         private void doStartupCheck()
         {
-            IEnumerable<XElement> queryPathsNeedChecking =
-                // loop on videos
-                from vid in Root.Descendants("VIDEO")
-                    // where they either have never been seen
-                            where (string)vid.Attribute("Exists") == null
-                // or the last time they were checked is unknown
-                || (string)vid.Attribute("LastChecked") == null
-                // or the last time they where checked was more than two days agp
-                || DateTime.Now.Subtract((DateTime)vid.Attribute("LastChecked")).TotalDays > 2
-                // get the filename
-                select vid.Element("Filename");
-
-            // Check for their existence.
-            foreach (var file in queryPathsNeedChecking)
+            XElement[] elements = new XElement[] { CHDBElement, InWorkElement };
+            foreach ( XElement element in elements)
             {
-                if (PlayerHelper.CheckFileExists(file.Value))
+                IEnumerable<XElement> queryPathsNeedChecking =
+                    // loop on videos
+                    from vid in element.Descendants("VIDEO")
+                    // where they either have never been seen
+                    where (string)vid.Attribute("Exists") == null
+                    // or the last time they were checked is unknown
+                    || (string)vid.Attribute("LastChecked") == null
+                    // or the last time they where checked was more than two days agp
+                    || DateTime.Now.Subtract((DateTime)vid.Attribute("LastChecked")).TotalDays > 2
+                    // get the filename
+                    select vid.Element("Filename");
+
+                // Check for their existence.
+                foreach (var file in queryPathsNeedChecking)
                 {
-                    file.Parent.SetAttributeValue("Exists", true);
-                    file.Parent.SetAttributeValue("LastChecked", DateTime.Now);
-                    Console.WriteLine(file.ToString() + " exists");
-                }
-                else
-                {
-                    file.Parent.Attributes("Exists").Remove();
-                    file.Parent.Attributes("LastChecked").Remove();
-                    Console.WriteLine(file.ToString() + " does not exist");
+                    if (PlayerHelper.CheckFileExists(file.Value))
+                    {
+                        file.Parent.SetAttributeValue("Exists", true);
+                        file.Parent.SetAttributeValue("LastChecked", DateTime.Now);
+                        Console.WriteLine(file.ToString() + " exists");
+                    }
+                    else
+                    {
+                        file.Parent.Attributes("Exists").Remove();
+                        file.Parent.Attributes("LastChecked").Remove();
+                        Console.WriteLine(file.ToString() + " does not exist");
+                    }
                 }
             }
+
+
+            // sync up tag DB
+            // using "select new" to only retain tag + value
+            // so tags will look the same in the union
+
+            var TagIEqualityComparer = new FuncEqualityComparer<XElement>(
+                (x1, x2) => 
+                {
+                    if (x1 == null)
+                    {
+                        return (x2 == null);
+                    }
+                    if (x2 == null)
+                    {
+                        return (x1 == null);
+                    }
+                    return x1.Value.Equals(x2.Value);
+                }, 
+                (x) => 
+                {
+                    if (x == null)
+                    {
+                        return 0;
+                    }
+                    return x.Value.GetHashCode();
+                });
+
+            var allTags = from tag in CHDBElement.Descendants("Tag") select new XElement(tag.Name, tag.Value);
+            allTags = allTags.Union(from tag in InWorkElement.Descendants("Tag") select new XElement(tag.Name, tag.Value), TagIEqualityComparer);
+            var tagsInTagDB = from tag in TagDBElement.Descendants("Tag") select new XElement(tag.Name, tag.Value);
+            // allTags = allTags.Union(tagsInTagDB); is it worth doing this??
+            var needToAddTags = allTags.Except(tagsInTagDB, TagIEqualityComparer);
+
+            // since at this point we should have parentless tags, and should have only tags not already in tagDB
+            // ... add them
+            TagDBElement.Add(needToAddTags);
         }
 
         internal void LoadNewRoot(string selected)
@@ -153,9 +252,39 @@ namespace CH2
             }
         }
 
-        private void Root_Changed(object sender, XObjectChangeEventArgs e)
+        internal void moveElements(string source, string dest, IList itemsToMove)
         {
-            Root.Save(CurrentFile);
+            var xElems = (from tag in (from tagCat
+                     in TagDBElement.Descendants("TagCategory")
+                                 where tagCat.Attribute("id").Value.Equals(source)
+                                 select tagCat
+                     ).Descendants("Tag")
+                     where itemsToMove.Contains(tag.Value)
+                    select tag).ToList();
+
+            XElement newParent = (from tagCat in TagDBElement.Descendants("TagCategory")
+                                 where tagCat.Attribute("id").Value.Equals(dest)
+                                 select tagCat).First();
+
+            foreach (XElement xElem in xElems)
+            {
+                newParent.Add(xElem);
+                xElem.Remove();
+            }
+
+            // fire all three since i am lazy
+            RaisePropertyChanged("BlacklistTags");
+            RaisePropertyChanged("WhitelistTags");
+            RaisePropertyChanged("UncategorizedTags");
+
+            // then all rounds and all videos since preferences may have changed
+            RaisePropertyChanged("AllRounds");
+            RaisePropertyChanged("AllVideos");
+        }
+
+        private void CHDB_Changed(object sender, XObjectChangeEventArgs e)
+        {
+            CHDBElement.Save(pathToCHDB);
         }
 
         private void resetRoot(XElement newRoot)
@@ -165,10 +294,7 @@ namespace CH2
             Console.WriteLine("AllVideos.Count(): {0}", AllVideos.Count());
             PlayerHelper.Stop();
             wasPlaying = false;
-            Root.Changed -= Root_Changed;
             Root = newRoot;
-            Root.Changed += Root_Changed;
-            doStartupCheck();
 
             SelectedRound = AllRounds.First();
             RaisePropertyChanged("AllVideos");
@@ -260,7 +386,24 @@ namespace CH2
         {
             return round.Parent;
         }
-                
+
+        private List<TokenizedTagItem> GetTagsFromSelectedItem(XElement selectedItem)
+        {
+            if (selectedItem == null)
+            {
+                return new List<TokenizedTagItem>();
+            }
+            var temp = from tags in selectedItem.Elements("Tag")
+                                            select new TokenizedTagItem
+                                            {
+                                                Text = tags.Value
+                                            };
+            if (temp.Count() == 0)
+            {
+                return new List<TokenizedTagItem>();
+            }
+            return temp.ToList();
+        }
 
         private bool IsValidForSelection(XElement value)
         {
@@ -307,6 +450,61 @@ namespace CH2
             round.SetElementValue("SkillRating", 1);
 
             return round;
+        }
+
+        internal void TagRemoved(object sender, TokenizedTagEventArgs e)
+        {
+            if (TreeViewSelectedItem == null || e.Item == null || e.Item.Text == null)
+            {
+                return;
+            }
+
+            var myTag = from tag in TreeViewSelectedItem.Elements("Tag") where string.Equals(tag.Value, e.Item.Text) select tag;
+            myTag.Remove();
+            // see if this tag is anywhere else
+            var tagStillInCHDB = from tag in CHDBElement.Descendants("Tag") where string.Equals(tag.Value, e.Item.Text) select tag;
+            var tagStillInInWork = from tag in InWorkElement.Descendants("Tag") where string.Equals(tag.Value, e.Item.Text) select tag;
+            if (( tagStillInCHDB.Count() + tagStillInInWork.Count()) == 0)
+            {
+                var tagInTagDB = from tag in TagDBElement.Descendants("Tag") where string.Equals(tag.Value, e.Item.Text) select tag;
+                tagInTagDB.Remove();
+                // fire all three since i am lazy
+                RaisePropertyChanged("BlacklistTags");
+                RaisePropertyChanged("WhitelistTags");
+                RaisePropertyChanged("UncategorizedTags");
+            }
+
+            // then all rounds and all videos since preferences may have changed
+            RaisePropertyChanged("AllRounds");
+            RaisePropertyChanged("AllVideos");
+        }
+
+        internal void TagApplied(object sender, TokenizedTagEventArgs e)
+        {
+            if (TreeViewSelectedItem == null || e.Item == null || e.Item.Text == null)
+            {
+                return;
+            }
+
+            var myTag = from tag in TreeViewSelectedItem.Elements("Tag") where string.Equals(tag.Value, e.Item.Text) select tag;
+            if (myTag.Count() == 0)
+            {
+                TreeViewSelectedItem.Add(new XElement(XName.Get("Tag"), e.Item.Text));
+                // then all rounds and all videos since preferences may have changed
+                RaisePropertyChanged("AllRounds");
+                RaisePropertyChanged("AllVideos");
+            }
+            // maybe add it to the tag db?
+            var myTag2 = from tag in TagDBElement.Descendants("Tag") where string.Equals(tag.Value, e.Item.Text) select tag;
+            if (myTag2.Count() == 0)
+            {
+                var uncategorizedTags = from tagCat in TagDBElement.Elements(XName.Get("TagCategory"))
+                                        where tagCat.Attribute(XName.Get("id")).Value.Equals("None")
+                                        select tagCat;
+
+                uncategorizedTags.First().Add(new XElement(XName.Get("Tag"), e.Item.Text));
+                RaisePropertyChanged("UncategorizedTags");
+            }
         }
     }
 }

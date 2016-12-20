@@ -18,11 +18,11 @@ namespace XMLUtilities
 
 
             XmlDocument doc = new XmlDocument();
-            doc.Load(@"..\..\..\CH2\XML\orphans.xml");
+            doc.Load(args[0]);
 
             XmlReader xmlReadB = new XmlTextReader(new StringReader(doc.DocumentElement.OuterXml));
 
-            string outputPath = @"..\..\..\CH2\XML\orphans_sorted.xml";
+            string outputPath = args[1];
             using (var stream = File.OpenWrite(outputPath))
             {
                 xslt.Transform(xmlReadB, null, stream);

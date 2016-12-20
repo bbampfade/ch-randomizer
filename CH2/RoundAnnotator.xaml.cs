@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CH2.MVVM;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -20,14 +21,14 @@ namespace CH2
     /// </summary>
     public partial class RoundAnnotator : Window
     {
-        CHDB chdb;
+        BaseViewModel chdb;
 
         public RoundAnnotator()
         {
             InitializeComponent();
         }
 
-        internal RoundAnnotator(CHDB chdb) : this()
+        internal RoundAnnotator(BaseViewModel chdb) : this()
         {
             this.chdb = chdb;
             this.DataContext = chdb;
