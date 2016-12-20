@@ -13,8 +13,7 @@ namespace CH2.MVVM
         /// </summary>
         public static void Raise(this EventHandler eventToRaise, object sender, EventArgs eventArgs)
         {
-            if (eventToRaise != null)
-                eventToRaise(sender, eventArgs);
+            eventToRaise?.Invoke(sender, eventArgs);
         }
 
         /// <summary>
@@ -23,8 +22,7 @@ namespace CH2.MVVM
         public static void Raise<TEventArgs>(this EventHandler<TEventArgs> eventToRaise, object sender, TEventArgs eventArgs)
             where TEventArgs : EventArgs
         {
-            if (eventToRaise != null)
-                eventToRaise(sender, eventArgs);
+            eventToRaise?.Invoke(sender, eventArgs);
         }
 
         /// <summary>
@@ -32,8 +30,7 @@ namespace CH2.MVVM
         /// </summary>
         public static void Raise(this PropertyChangedEventHandler eventToRaise, object sender, PropertyChangedEventArgs eventArgs)
         {
-            if (eventToRaise != null)
-                eventToRaise(sender, eventArgs);
+            eventToRaise?.Invoke(sender, eventArgs);
         }
 
     }

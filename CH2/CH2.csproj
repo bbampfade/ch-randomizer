@@ -77,6 +77,14 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Controls.Input.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Input.Toolkit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Windows.Controls.Layout.Toolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\System.Windows.Controls.Layout.Toolkit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Windows.Interactivity, Version=4.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
     <Reference Include="System.Xml" />
@@ -92,6 +100,10 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WindowsFormsIntegration" />
+    <Reference Include="WPFToolkit, Version=3.5.40128.1, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\WPFToolkit.3.5.50211.1\lib\WPFToolkit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Xceed.Wpf.AvalonDock, Version=2.9.0.0, Culture=neutral, PublicKeyToken=3e4669d2f30244f4, processorArchitecture=MSIL">
       <HintPath>..\packages\Extended.Wpf.Toolkit.2.9\lib\net40\Xceed.Wpf.AvalonDock.dll</HintPath>
       <Private>True</Private>
@@ -123,18 +135,30 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="CHDB.properties.cs" />
+    <Compile Include="Helpers\ExceptionExtensions.cs" />
     <Compile Include="Helpers\FontHelper.cs" />
+    <Compile Include="Helpers\FuncEqualityComparer.cs" />
+    <Compile Include="MVVM\Behaviors\BindableSelectedItemBehavior.cs" />
     <Compile Include="MVVM\Behaviors\CancellableSelectionBehavior.cs" />
     <Compile Include="MVVM\Behaviors\DataGridBehavior.cs" />
     <Compile Include="MVVM\Converters\BooleanToVisibilityConverter.cs" />
     <Compile Include="MVVM\Converters\EnumBooleanConverter.cs" />
-    <Compile Include="MVVM\Converters\DGIndexConverter.cs" />
     <Compile Include="MVVM\Converters\FilenameConverter.cs" />
     <Compile Include="MVVM\Converters\IndexConverter.cs" />
+    <Compile Include="MVVM\Converters\ItemsControlIndexConverter.cs" />
+    <Compile Include="MVVM\Converters\RoundTextIndexConverter.cs" />
+    <Compile Include="MVVM\Converters\TreeViewItemToFilenameConverter.cs" />
+    <Compile Include="MVVM\DependencyObjectExtensions.cs" />
     <Compile Include="MVVM\MarginSetter.cs" />
     <Compile Include="MVVM\Converters\TimeSpanConverter.cs" />
     <Compile Include="RoundAnnotator.xaml.cs">
       <DependentUpon>RoundAnnotator.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="TagEditor.xaml.cs">
+      <DependentUpon>TagEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="TagPreferences.xaml.cs">
+      <DependentUpon>TagPreferences.xaml</DependentUpon>
     </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -160,6 +184,14 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="RoundAnnotator.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="TagEditor.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="TagPreferences.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -191,7 +223,9 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <None Include="CH2_TemporaryKey.pfx" />
-    <None Include="packages.config" />
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -222,6 +256,15 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Resources\chain-unchain.png" />
+    <Resource Include="Resources\chain.png" />
+    <Resource Include="Resources\control-180.png" />
+    <Resource Include="Resources\control-double-180.png" />
+    <Resource Include="Resources\control-double-270.png" />
+    <Resource Include="Resources\control-double.png" />
+    <Resource Include="Resources\control-skip-180.png" />
+    <Resource Include="Resources\control-skip.png" />
+    <Resource Include="Resources\control.png" />
     <Content Include="XML\CHDB.xml">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -248,6 +291,10 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\TokenizedTag\TokenizedTag.csproj">
+      <Project>{db932eee-a33f-4456-8ffe-ca398c5c81d9}</Project>
+      <Name>TokenizedTag</Name>
+    </ProjectReference>
     <ProjectReference Include="..\WmpAxLib\WmpAxLib.csproj">
       <Project>{5411f0e6-77ae-4bb5-b279-0a19e598ee83}</Project>
       <Name>WmpAxLib</Name>
