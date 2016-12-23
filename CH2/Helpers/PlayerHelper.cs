@@ -57,17 +57,21 @@ namespace CH2.Helpers
         private static void startPlayingRound(XElement round)
         {
             double startPos = ((DateTime)round.Element("StartTime")).TimeOfDay.TotalSeconds;
-            string URI = SoftPath + "\\" + round.Parent.Element("Filename").Value;
+            string URI = round.Parent.Element("Filename").Value;
             startPlayingURL(URI, startPos);
         }
 
         private static void startPlayingVideo(XElement video)
         {
-            startPlayingURL(SoftPath + "\\" + video.Element("Filename").Value, 0);
+            startPlayingURL(video.Element("Filename").Value, 0);
         }
 
         private static void startPlayingURL(string URL, double startPos)
         {
+            if (!PathHelper.IsFullPath(URL))
+            {
+                URL = SoftPath + "\\" + URL;
+            }
             Player.URL = URL;
             Player.Ctlcontrols.currentPosition = startPos;
             Player.Ctlcontrols.play();
@@ -105,7 +109,12 @@ namespace CH2.Helpers
 
         internal static bool CheckFileExists(string filename_i)
         {
-            string filename = SoftPath + "\\" + filename_i;
+            string filename = "";
+            if (!PathHelper.IsFullPath(filename_i))
+            {
+                filename = SoftPath + "\\";
+            }
+            filename += filename_i;
             Console.WriteLine("checking path {0}", filename);
             return File.Exists(filename);
         }
