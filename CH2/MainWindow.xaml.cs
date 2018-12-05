@@ -113,7 +113,7 @@ namespace CH2
             {
                 tp = new TagPreferences(chdb);
             }
-            te.Show();
+            tp.Show();
         }
 
         private void setupTextAnimations(object sender, RoutedEventArgs e)
